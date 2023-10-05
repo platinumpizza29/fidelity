@@ -1,4 +1,4 @@
-# musicplayer
+# Fidelity player
 
 Fidelity Git is a cutting-edge music player meticulously crafted using Flutter, designed to provide a seamless and immersive audio experience. This innovative music player redefines the way music enthusiasts interact with their favorite tunes, offering a blend of powerful features and an intuitive user interface.
 
