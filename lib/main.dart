@@ -1,8 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:musicplayer/pages/home_page.dart';
+import 'package:musicplayer/provider/provider_store.dart';
+import 'package:provider/provider.dart';
 
 void main() {
-  runApp(const MyApp());
+  runApp(MultiProvider(
+    providers: [ChangeNotifierProvider(create: (_) => ProviderStore())],
+    child: const MyApp(),
+  ));
 }
 
 class MyApp extends StatefulWidget {
