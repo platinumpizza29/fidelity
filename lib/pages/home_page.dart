@@ -2,6 +2,7 @@
 
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:musicplayer/pages/now_playing.dart';
 import 'package:on_audio_query/on_audio_query.dart';
 import 'package:permission_handler/permission_handler.dart';
 
@@ -45,6 +46,12 @@ class _HomePageState extends State<HomePage> {
                 leading: Icon(Icons.music_note),
                 title: Text(snapshot.data![index].displayNameWOExt),
                 subtitle: Text(snapshot.data![index].artist.toString()),
+                onTap: () => Navigator.push(
+                  context,
+                  CupertinoPageRoute(
+                    builder: (context) => NowPlaying(),
+                  ),
+                ),
               );
             },
           );
