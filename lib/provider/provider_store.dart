@@ -1,85 +1,25 @@
-// ignore_for_file: prefer_const_constructors
-
 import 'package:flutter/material.dart';
-import 'package:just_audio/just_audio.dart';
 import 'package:on_audio_query/on_audio_query.dart';
 
-class ProviderStore with ChangeNotifier {
-  final AudioPlayer _player = AudioPlayer();
-  Duration _duration = const Duration();
-  Duration _position = const Duration();
-  bool _isPlaying = false;
-  int _seekPosition = 0;
-  int _songId = 0;
+class SongModelProvider with ChangeNotifier {
+  int _id = 0;
   List<SongModel> _likedSongs = [];
 
-  bool get isPlaying => _isPlaying;
-  Duration get position => _position;
-  Duration get duration => _duration;
-  int get seekPosition => _seekPosition;
-  int get songId => _songId;
+  int get id => _id;
   List<SongModel> get likedSongs => _likedSongs;
 
-  handleIsPlaying(bool status) {
-    _isPlaying = status;
+  void setId(int id) {
+    _id = id;
     notifyListeners();
   }
 
-  void playAudio(String audioUrl, int id) async {
-    try {
-      await _player.setAudioSource(AudioSource.uri(Uri.parse(audioUrl)));
-      _isPlaying = true;
-      _player.play();
-      notifyListeners();
-    } catch (e) {
-      print(e);
-    }
-    _player.positionStream.listen(
-      (event) {
-        _position = event;
-        notifyListeners();
-      },
-    );
-    _player.durationStream.listen(
-      (event) {
-        _duration = event!;
-        notifyListeners();
-      },
-    );
-  }
-
-  void pauseAudio() {
-    _player.pause();
-    _isPlaying = false;
-    notifyListeners();
-  }
-
-  void handleSliderSeek(int value) {
-    Duration duration = Duration(seconds: value);
-    _player.seek(duration);
-    _seekPosition = value;
-    notifyListeners();
-  }
-
-  void handleSetSongId(int id) {
-    _songId = id;
-    notifyListeners();
-  }
-
-  void handleLikedSongs(SongModel song) {
-    if (_likedSongs.contains(song)) {
-      _likedSongs.remove(song);
+  void handleLikedSongs(SongModel model) {
+    if (_likedSongs.contains(model)) {
+      _likedSongs.remove(model);
       notifyListeners();
     } else {
-      _likedSongs.add(song);
+      _likedSongs.add(model);
       notifyListeners();
     }
-    notifyListeners();
-  }
-
-  @override
-  void dispose() {
-    _player.dispose();
-    super.dispose();
   }
 }

@@ -1,153 +1,259 @@
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
-import 'package:ionicons/ionicons.dart';
+import 'package:just_audio/just_audio.dart';
 import 'package:musicplayer/provider/provider_store.dart';
 import 'package:on_audio_query/on_audio_query.dart';
 import 'package:provider/provider.dart';
 
 class NowPlaying extends StatefulWidget {
-  const NowPlaying({super.key, required this.model});
-  final SongModel model;
+  final List<SongModel> songModelList;
+  final AudioPlayer audioPlayer;
+
+  const NowPlaying(
+      {Key? key, required this.songModelList, required this.audioPlayer})
+      : super(key: key);
 
   @override
   State<NowPlaying> createState() => _NowPlayingState();
 }
 
 class _NowPlayingState extends State<NowPlaying> {
-  @override
-  void initState() {
-    ProviderStore providerStore =
-        Provider.of<ProviderStore>(context, listen: false);
-    providerStore.playAudio(widget.model.uri!, widget.model.id);
-    super.initState();
+  Duration _duration = const Duration();
+  Duration _position = const Duration();
+
+  bool _isPlaying = false;
+  List<AudioSource> songList = [];
+
+  int currentIndex = 0;
+
+  void popBack() {
+    Navigator.pop(context);
+  }
+
+  void seekToSeconds(int seconds) {
+    Duration duration = Duration(seconds: seconds);
+    widget.audioPlayer.seek(duration);
   }
 
   @override
-  Widget build(BuildContext context) {
-    return Consumer<ProviderStore>(
-      builder: (context, providerStore, child) {
-        return Scaffold(
-          appBar: AppBar(),
-          body: Column(
-            children: [
-              const Padding(
-                padding: EdgeInsets.all(20.0),
-                child: imageContainer(),
-              ),
-              Center(
-                child: Text(
-                  widget.model.displayNameWOExt.toString(),
-                ),
-              ),
-              Center(
-                child: Text(
-                  widget.model.artist.toString(),
-                ),
-              ),
-              Padding(
-                padding: const EdgeInsets.all(8.0),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                  children: [
-                    Text(context
-                        .watch<ProviderStore>()
-                        .position
-                        .toString()
-                        .split(".")[0]),
-                    Expanded(
-                      child: Slider(
-                        value: providerStore.position.inSeconds.toDouble(),
-                        min: const Duration(microseconds: 0)
-                            .inSeconds
-                            .toDouble(),
-                        max: providerStore.duration.inSeconds.toDouble(),
-                        onChanged: (value) {
-                          providerStore.handleSliderSeek(value.toInt());
-                        },
-                      ),
-                    ),
-                    Text(context
-                        .watch<ProviderStore>()
-                        .duration
-                        .toString()
-                        .split(".")[0])
-                  ],
-                ),
-              ),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                children: [
-                  IconButton(
-                    onPressed: () {},
-                    icon: const Icon(
-                      Icons.skip_previous_rounded,
-                    ),
-                  ),
-                  IconButton(
-                    onPressed: () {
-                      if (providerStore.isPlaying) {
-                        providerStore.pauseAudio();
-                      } else {
-                        providerStore.playAudio(
-                            widget.model.uri!, widget.model.id);
-                      }
-                    },
-                    icon: Icon(
-                      providerStore.isPlaying == true
-                          ? Icons.pause
-                          : Icons.play_arrow_rounded,
-                    ),
-                  ),
-                  IconButton(
-                    onPressed: () {},
-                    icon: const Icon(
-                      Icons.skip_next_rounded,
-                    ),
-                  ),
-                ],
-              )
-            ],
+  void initState() {
+    super.initState();
+    parseSong();
+  }
+
+  void parseSong() {
+    try {
+      for (var element in widget.songModelList) {
+        songList.add(
+          AudioSource.uri(
+            Uri.parse(element.uri!),
           ),
+        );
+      }
+
+      widget.audioPlayer.setAudioSource(
+        ConcatenatingAudioSource(children: songList),
+      );
+      widget.audioPlayer.play();
+      _isPlaying = true;
+
+      widget.audioPlayer.durationStream.listen((duration) {
+        if (duration != null) {
+          setState(() {
+            _duration = duration;
+          });
+        }
+      });
+      widget.audioPlayer.positionStream.listen((position) {
+        setState(() {
+          _position = position;
+        });
+      });
+      listenToEvent();
+      listenToSongIndex();
+    } on Exception catch (_) {
+      popBack();
+    }
+  }
+
+  void listenToEvent() {
+    widget.audioPlayer.playerStateStream.listen((state) {
+      if (state.playing) {
+        setState(() {
+          _isPlaying = true;
+        });
+      } else {
+        setState(() {
+          _isPlaying = false;
+        });
+      }
+      if (state.processingState == ProcessingState.completed) {
+        setState(() {
+          _isPlaying = false;
+        });
+      }
+    });
+  }
+
+  void listenToSongIndex() {
+    widget.audioPlayer.currentIndexStream.listen(
+      (event) {
+        setState(
+          () {
+            if (event != null) {
+              currentIndex = event;
+            }
+            context
+                .read<SongModelProvider>()
+                .setId(widget.songModelList[currentIndex].id);
+          },
         );
       },
     );
   }
-}
-
-class imageContainer extends StatelessWidget {
-  const imageContainer({
-    super.key,
-  });
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      height: MediaQuery.of(context).size.height / 1.9,
-      width: double.infinity,
-      decoration: BoxDecoration(
-        color: CupertinoColors.lightBackgroundGray,
-        borderRadius: BorderRadius.circular(30),
+    double height = MediaQuery.of(context).size.height;
+    return SafeArea(
+      child: Scaffold(
+        body: Container(
+          height: height,
+          width: double.infinity,
+          padding: const EdgeInsets.all(10.0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              IconButton(
+                onPressed: () {
+                  popBack();
+                },
+                icon: const Icon(Icons.arrow_back_ios),
+              ),
+              Expanded(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    const Center(
+                      child: ArtWorkWidget(),
+                    ),
+                    const SizedBox(
+                      height: 15.0,
+                    ),
+                    Text(
+                      widget.songModelList[currentIndex].displayNameWOExt,
+                      textAlign: TextAlign.center,
+                      style: const TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 25.0,
+                          overflow: TextOverflow.ellipsis),
+                      maxLines: 1,
+                    ),
+                    const SizedBox(
+                      height: 15.0,
+                    ),
+                    Slider(
+                      min: 0.0,
+                      value: _position.inSeconds.toDouble(),
+                      max: _duration.inSeconds.toDouble() + 1.0,
+                      onChanged: (value) {
+                        setState(
+                          () {
+                            seekToSeconds(value.toInt());
+                            value = value;
+                          },
+                        );
+                      },
+                    ),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      children: [
+                        Text(
+                          _position.toString().split(".")[0],
+                        ),
+                        Text(
+                          _duration.toString().split(".")[0],
+                        )
+                      ],
+                    ),
+                    const SizedBox(
+                      height: 20.0,
+                    ),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                      children: [
+                        IconButton(
+                          onPressed: () {
+                            if (widget.audioPlayer.hasPrevious) {
+                              widget.audioPlayer.seekToPrevious();
+                            }
+                          },
+                          icon: const Icon(
+                            Icons.skip_previous,
+                            size: 24.0,
+                          ),
+                        ),
+                        IconButton(
+                          onPressed: () {
+                            setState(() {
+                              if (_isPlaying) {
+                                widget.audioPlayer.pause();
+                              } else {
+                                if (_position >= _duration) {
+                                  seekToSeconds(0);
+                                } else {
+                                  widget.audioPlayer.play();
+                                }
+                              }
+                              _isPlaying = !_isPlaying;
+                            });
+                          },
+                          icon: Icon(
+                            _isPlaying ? Icons.pause : Icons.play_arrow,
+                            size: 40.0,
+                          ),
+                          color: Theme.of(context).primaryColor,
+                        ),
+                        IconButton(
+                          onPressed: () {
+                            if (widget.audioPlayer.hasNext) {
+                              widget.audioPlayer.seekToNext();
+                            }
+                          },
+                          icon: const Icon(
+                            Icons.skip_next,
+                            size: 24.0,
+                          ),
+                        ),
+                      ],
+                    )
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
       ),
-      child: const ArtWorkWidget(),
     );
   }
 }
 
 class ArtWorkWidget extends StatelessWidget {
   const ArtWorkWidget({
-    super.key,
-  });
+    Key? key,
+  }) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
     return QueryArtworkWidget(
-      artworkFit: BoxFit.cover,
-      key: ValueKey<int>(context.watch<ProviderStore>().songId),
-      id: context.watch<ProviderStore>().songId,
+      id: context.watch<SongModelProvider>().id,
       type: ArtworkType.AUDIO,
+      artworkHeight: MediaQuery.of(context).size.height / 2,
+      artworkWidth: double.infinity,
+      artworkFit: BoxFit.cover,
       nullArtworkWidget: const Icon(
-        Ionicons.musical_note,
-        size: 55,
+        Icons.music_note,
+        size: 200,
       ),
     );
   }
