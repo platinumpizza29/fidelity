@@ -17,6 +17,9 @@ class HomePage extends StatefulWidget {
 }
 
 class _HomePageState extends State<HomePage> {
+  List<SongModel> songs = [];
+  TextEditingController searchController = TextEditingController();
+
   @override
   void initState() {
     requestPermission();
@@ -54,7 +57,13 @@ class _HomePageState extends State<HomePage> {
                       itemCount: snapshot.data!.length,
                       itemBuilder: (context, index) {
                         return ListTile(
-                          leading: Icon(Ionicons.musical_note),
+                          leading: QueryArtworkWidget(
+                            id: snapshot.data![index].id,
+                            type: ArtworkType.AUDIO,
+                            nullArtworkWidget: Icon(
+                              Ionicons.musical_note,
+                            ),
+                          ),
                           trailing: Icon(
                             Icons.more_vert_rounded,
                           ),

@@ -1,4 +1,8 @@
+// ignore_for_file: prefer_const_constructors
+
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:ionicons/ionicons.dart';
 import 'package:musicplayer/provider/provider_store.dart';
 import 'package:on_audio_query/on_audio_query.dart';
 import 'package:provider/provider.dart';
@@ -34,8 +38,14 @@ class _NowPlayingState extends State<NowPlaying> {
                   height: MediaQuery.of(context).size.height / 1.9,
                   width: double.infinity,
                   decoration: BoxDecoration(
-                    color: Colors.red,
+                    color: CupertinoColors.lightBackgroundGray,
                     borderRadius: BorderRadius.circular(30),
+                  ),
+                  child: Center(
+                    child: Icon(
+                      Ionicons.musical_note,
+                      size: 55,
+                    ),
                   ),
                 ),
               ),
@@ -52,14 +62,18 @@ class _NowPlayingState extends State<NowPlaying> {
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                   children: [
-                    const Text("0.0"),
+                    Text(providerStore.position.toString().split(".")[0]),
                     Expanded(
                       child: Slider(
-                        value: 0.9,
-                        onChanged: (value) {},
+                        value: providerStore.position.inSeconds.toDouble(),
+                        min: Duration(microseconds: 0).inSeconds.toDouble(),
+                        max: providerStore.duration.inSeconds.toDouble(),
+                        onChanged: (value) {
+                          providerStore.handleSliderSeek(value.toInt());
+                        },
                       ),
                     ),
-                    const Text("0.0")
+                    Text(providerStore.duration.toString().split(".")[0])
                   ],
                 ),
               ),
