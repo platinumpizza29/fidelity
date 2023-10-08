@@ -1,5 +1,3 @@
-// ignore_for_file: prefer_const_constructors
-
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:ionicons/ionicons.dart';
@@ -20,7 +18,7 @@ class _NowPlayingState extends State<NowPlaying> {
   void initState() {
     ProviderStore providerStore =
         Provider.of<ProviderStore>(context, listen: false);
-    providerStore.playAudio(widget.model.uri!);
+    providerStore.playAudio(widget.model.uri!, widget.model.id);
     super.initState();
   }
 
@@ -32,22 +30,9 @@ class _NowPlayingState extends State<NowPlaying> {
           appBar: AppBar(),
           body: Column(
             children: [
-              Padding(
-                padding: const EdgeInsets.all(20.0),
-                child: Container(
-                  height: MediaQuery.of(context).size.height / 1.9,
-                  width: double.infinity,
-                  decoration: BoxDecoration(
-                    color: CupertinoColors.lightBackgroundGray,
-                    borderRadius: BorderRadius.circular(30),
-                  ),
-                  child: Center(
-                    child: Icon(
-                      Ionicons.musical_note,
-                      size: 55,
-                    ),
-                  ),
-                ),
+              const Padding(
+                padding: EdgeInsets.all(20.0),
+                child: imageContainer(),
               ),
               Center(
                 child: Text(
@@ -55,25 +40,37 @@ class _NowPlayingState extends State<NowPlaying> {
                 ),
               ),
               Center(
-                child: Text(widget.model.artist.toString()),
+                child: Text(
+                  widget.model.artist.toString(),
+                ),
               ),
               Padding(
                 padding: const EdgeInsets.all(8.0),
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                   children: [
-                    Text(providerStore.position.toString().split(".")[0]),
+                    Text(context
+                        .watch<ProviderStore>()
+                        .position
+                        .toString()
+                        .split(".")[0]),
                     Expanded(
                       child: Slider(
                         value: providerStore.position.inSeconds.toDouble(),
-                        min: Duration(microseconds: 0).inSeconds.toDouble(),
+                        min: const Duration(microseconds: 0)
+                            .inSeconds
+                            .toDouble(),
                         max: providerStore.duration.inSeconds.toDouble(),
                         onChanged: (value) {
                           providerStore.handleSliderSeek(value.toInt());
                         },
                       ),
                     ),
-                    Text(providerStore.duration.toString().split(".")[0])
+                    Text(context
+                        .watch<ProviderStore>()
+                        .duration
+                        .toString()
+                        .split(".")[0])
                   ],
                 ),
               ),
@@ -91,7 +88,8 @@ class _NowPlayingState extends State<NowPlaying> {
                       if (providerStore.isPlaying) {
                         providerStore.pauseAudio();
                       } else {
-                        providerStore.playAudio(widget.model.uri!);
+                        providerStore.playAudio(
+                            widget.model.uri!, widget.model.id);
                       }
                     },
                     icon: Icon(
@@ -112,6 +110,45 @@ class _NowPlayingState extends State<NowPlaying> {
           ),
         );
       },
+    );
+  }
+}
+
+class imageContainer extends StatelessWidget {
+  const imageContainer({
+    super.key,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      height: MediaQuery.of(context).size.height / 1.9,
+      width: double.infinity,
+      decoration: BoxDecoration(
+        color: CupertinoColors.lightBackgroundGray,
+        borderRadius: BorderRadius.circular(30),
+      ),
+      child: const ArtWorkWidget(),
+    );
+  }
+}
+
+class ArtWorkWidget extends StatelessWidget {
+  const ArtWorkWidget({
+    super.key,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return QueryArtworkWidget(
+      artworkFit: BoxFit.cover,
+      key: ValueKey<int>(context.watch<ProviderStore>().songId),
+      id: context.watch<ProviderStore>().songId,
+      type: ArtworkType.AUDIO,
+      nullArtworkWidget: const Icon(
+        Ionicons.musical_note,
+        size: 55,
+      ),
     );
   }
 }

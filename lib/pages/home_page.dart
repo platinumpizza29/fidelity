@@ -3,6 +3,7 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:ionicons/ionicons.dart';
+import 'package:musicplayer/pages/liked_page.dart';
 import 'package:musicplayer/pages/now_playing.dart';
 import 'package:musicplayer/provider/provider_store.dart';
 import 'package:on_audio_query/on_audio_query.dart';
@@ -19,6 +20,10 @@ class HomePage extends StatefulWidget {
 class _HomePageState extends State<HomePage> {
   List<SongModel> songs = [];
   TextEditingController searchController = TextEditingController();
+  String currentSong = "";
+  String artist = "";
+  int id = 0;
+  var uri;
 
   @override
   void initState() {
@@ -35,6 +40,19 @@ class _HomePageState extends State<HomePage> {
           "Discover",
           style: TextStyle(fontWeight: FontWeight.bold, fontSize: 25),
         ),
+        actions: [
+          TextButton(
+            onPressed: () {
+              Navigator.push(
+                context,
+                CupertinoPageRoute(
+                  builder: (context) => LikedSongs(),
+                ),
+              );
+            },
+            child: Text("Liked"),
+          ),
+        ],
       ),
       body: Consumer<ProviderStore>(
         builder: (context, providerStore, child) {
@@ -64,13 +82,28 @@ class _HomePageState extends State<HomePage> {
                               Ionicons.musical_note,
                             ),
                           ),
-                          trailing: Icon(
-                            Icons.more_vert_rounded,
+                          trailing: IconButton(
+                            onPressed: () {
+                              print(providerStore.likedSongs);
+                              providerStore
+                                  .handleLikedSongs(snapshot.data![index]);
+                            },
+                            icon: Icon(
+                              Ionicons.heart_outline,
+                            ),
                           ),
                           title: Text(snapshot.data![index].displayNameWOExt),
                           subtitle:
                               Text(snapshot.data![index].artist.toString()),
                           onTap: () {
+                            setState(() {
+                              artist = snapshot.data![index].artist.toString();
+                              currentSong = snapshot
+                                  .data![index].displayNameWOExt
+                                  .toString();
+                              id = snapshot.data![index].id;
+                              uri = snapshot.data![index].uri;
+                            });
                             Navigator.push(
                               context,
                               CupertinoPageRoute(
@@ -97,6 +130,25 @@ class _HomePageState extends State<HomePage> {
                             topLeft: Radius.circular(30),
                             topRight: Radius.circular(30),
                           ),
+                        ),
+                        child: ListTile(
+                          trailing: IconButton(
+                            icon: Icon(
+                              providerStore.isPlaying
+                                  ? Icons.pause
+                                  : Icons.play_arrow,
+                              size: 35,
+                            ),
+                            onPressed: () {
+                              if (providerStore.isPlaying) {
+                                providerStore.pauseAudio();
+                              } else {
+                                providerStore.playAudio(uri, id);
+                              }
+                            },
+                          ),
+                          title: Text(currentSong),
+                          subtitle: Text(artist),
                         ),
                       ),
                     )

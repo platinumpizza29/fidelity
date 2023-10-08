@@ -2,29 +2,35 @@
 
 import 'package:flutter/material.dart';
 import 'package:just_audio/just_audio.dart';
+import 'package:on_audio_query/on_audio_query.dart';
 
 class ProviderStore with ChangeNotifier {
   final AudioPlayer _player = AudioPlayer();
-  Duration _duration = Duration();
-  Duration _position = Duration();
+  Duration _duration = const Duration();
+  Duration _position = const Duration();
   bool _isPlaying = false;
   int _seekPosition = 0;
+  int _songId = 0;
+  List<SongModel> _likedSongs = [];
 
   bool get isPlaying => _isPlaying;
   Duration get position => _position;
   Duration get duration => _duration;
   int get seekPosition => _seekPosition;
+  int get songId => _songId;
+  List<SongModel> get likedSongs => _likedSongs;
 
   handleIsPlaying(bool status) {
     _isPlaying = status;
     notifyListeners();
   }
 
-  void playAudio(String audioUrl) async {
+  void playAudio(String audioUrl, int id) async {
     try {
       await _player.setAudioSource(AudioSource.uri(Uri.parse(audioUrl)));
       _isPlaying = true;
       _player.play();
+      notifyListeners();
     } catch (e) {
       print(e);
     }
@@ -40,7 +46,6 @@ class ProviderStore with ChangeNotifier {
         notifyListeners();
       },
     );
-    notifyListeners();
   }
 
   void pauseAudio() {
@@ -53,6 +58,22 @@ class ProviderStore with ChangeNotifier {
     Duration duration = Duration(seconds: value);
     _player.seek(duration);
     _seekPosition = value;
+    notifyListeners();
+  }
+
+  void handleSetSongId(int id) {
+    _songId = id;
+    notifyListeners();
+  }
+
+  void handleLikedSongs(SongModel song) {
+    if (_likedSongs.contains(song)) {
+      _likedSongs.remove(song);
+      notifyListeners();
+    } else {
+      _likedSongs.add(song);
+      notifyListeners();
+    }
     notifyListeners();
   }
 
